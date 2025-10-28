@@ -8,7 +8,10 @@
 #   POST /retrain              -> re-treina lendo toda a tabela do SQLite
 #
 # Front-end de teste: abra static/index.html (aponta para estes endpoints)
-
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -27,6 +30,14 @@ app.add_middleware(
     allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
 
+# === Front-end ===
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+    
 # ======== Schemas ========
 class TrainRequest(BaseModel):
     target: str = "yield_kg_ha"          # alvo padrão para seu dataset
