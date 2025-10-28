@@ -1,0 +1,14 @@
+# Ignorar ambiente virtual
+venv/
+.venv/
+
+# Ignorar modelos treinados e arquivos grandes
+models/
+
+# Outros arquivos opcionais que costumam ser ignorados
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite
+*.log

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"/>
+  <title>CSV Analytics & Predição</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>
+    body{font-family:system-ui,Arial;max-width:1100px;margin:auto;padding:16px}
+    .card{border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin:12px 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+    img{width:100%;height:auto;border-radius:8px}
+    button{padding:10px 16px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer}
+    input,select{padding:8px}
+    .metrics span{display:inline-block;background:#f3f4f6;padding:6px 10px;margin:4px;border-radius:999px}
+  </style>
+</head>
+<body>
+  <h1>CSV Analytics & Predição</h1>
+
+  <div class="card">
+    <h3>1) Upload CSV → SQLite + análise</h3>
+    <input id="file" type="file" accept=".csv"/>
+    <button onclick="upload()">Enviar e Analisar</button>
+    <div id="summary" class="metrics"></div>
+  </div>
+
+  <div id="charts" class="grid"></div>
+
+  <div class="card">
+    <h3>2) Treinar/Re-treinar modelo</h3>
+    <label>Alvo:</label>
+    <select id="target">
+      <option value="yield_kg_ha">yield_kg_ha</option>
+      <option value="production">production</option>
+    </select>
+    <label>Modelo:</label>
+    <select id="model">
+      <option value="random_forest">Random Forest</option>
+      <option value="linear">Linear</option>
+    </select>
+    <button onclick="train()">Treinar</button>
+    <button onclick="retrain()">Re-treinar</button>
+    <pre id="trainout"></pre>
+  </div>
+
+  <div class="card">
+    <h3>3) Predizer</h3>
+    <p>Envie um JSON com as colunas (ex.: crop, year, state, area, rain_mm, fertilizer_kg_ha, ...)</p>
+    <textarea id="json" rows="6" style="width:100%;">{"crop":"Arecanut","year":1997,"season":"Inverno","state":"Assam","area":73814,"production":56708,"rain_mm":2051.4,"fertilizer_kg_ha":7024878.38,"pesticide_kg_ha":22882.34}</textarea>
+    <button onclick="predict()">Prever</button>
+    <pre id="predout"></pre>
+  </div>
+
+<script>
+const API = "http://localhost:8000";
+
+async function upload(){
+  const f = document.getElementById("file").files[0];
+  if(!f){ alert("Selecione um CSV."); return; }
+  const fd = new FormData(); fd.append("file", f);
+  const res = await fetch(API + "/upload_csv", { method:"POST", body: fd });
+  const data = await res.json();
+  if(!res.ok){ alert(data.detail || "Erro no upload"); return; }
+  renderSummary(data.summary);
+  renderCharts(data.images);
+}
+
+async function train(){
+  const target = document.getElementById("target").value;
+  const model = document.getElementById("model").value;
+  const res = await fetch(API + "/train", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({target: target, model_type: model})
+  });
+  const data = await res.json();
+  document.getElementById("trainout").textContent = JSON.stringify(data, null, 2);
+}
+
+async function retrain(){
+  const target = document.getElementById("target").value;
+  const model = document.getElementById("model").value;
+  const res = await fetch(API + "/retrain", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({target: target, model_type: model})
+  });
+  const data = await res.json();
+  document.getElementById("trainout").textContent = JSON.stringify(data, null, 2);
+}
+
+async function predict(){
+  const txt = document.getElementById("json").value;
+  const res = await fetch(API + "/predict", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({record: JSON.parse(txt)})
+  });
+  const data = await res.json();
+  document.getElementById("predout").textContent = JSON.stringify(data, null, 2);
+}
+
+function renderSummary(s){
+  const el = document.getElementById("summary");
+  el.innerHTML = "";
+  Object.entries(s).forEach(([k,v]) => {
+    if(v !== null && v !== undefined){
+      const span = document.createElement("span");
+      span.textContent = `${k}: ${v}`;
+      el.appendChild(span);
+    }
+  });
+}
+
+function renderCharts(images){
+  const container = document.getElementById("charts");
+  container.innerHTML = "";
+  for(const [name, b64] of Object.entries(images)){
+    const card = document.createElement("div"); card.className="card";
+    const h = document.createElement("h3"); h.textContent = name.replaceAll("_"," ");
+    const img = document.createElement("img"); img.src = "data:image/png;base64,"+b64;
+    card.appendChild(h); card.appendChild(img); container.appendChild(card);
+  }
+}
+</script>
+</body>
+</html>
