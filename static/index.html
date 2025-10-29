@@ -1,127 +1,93 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8"/>
-  <title>CSV Analytics & Predição</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <style>
-    body{font-family:system-ui,Arial;max-width:1100px;margin:auto;padding:16px}
-    .card{border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin:12px 0}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
-    img{width:100%;height:auto;border-radius:8px}
-    button{padding:10px 16px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer}
-    input,select{padding:8px}
-    .metrics span{display:inline-block;background:#f3f4f6;padding:6px 10px;margin:4px;border-radius:999px}
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSV Analyzer 🌾</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>CSV Analytics & Predição</h1>
 
-  <div class="card">
-    <h3>1) Upload CSV → SQLite + análise</h3>
-    <input id="file" type="file" accept=".csv"/>
-    <button onclick="upload()">Enviar e Analisar</button>
-    <div id="summary" class="metrics"></div>
-  </div>
+<body class="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white flex flex-col items-center">
 
-  <div id="charts" class="grid"></div>
+  <!-- HERO -->
+  <header class="text-center py-20 px-6 max-w-4xl">
+    <h1 class="text-5xl md:text-7xl font-extrabold mb-6 text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-blue-600 drop-shadow-[0_0_20px_rgba(56,189,248,0.3)]">
+      🌾 CSV Data Analyzer
+    </h1>
+    <p class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto">
+      Faça upload de um CSV, treine o modelo e visualize previsões e gráficos agrícolas interativos.
+    </p>
+  </header>
 
-  <div class="card">
-    <h3>2) Treinar/Re-treinar modelo</h3>
-    <label>Alvo:</label>
-    <select id="target">
-      <option value="yield_kg_ha">yield_kg_ha</option>
-      <option value="production">production</option>
-    </select>
-    <label>Modelo:</label>
-    <select id="model">
-      <option value="random_forest">Random Forest</option>
-      <option value="linear">Linear</option>
-    </select>
-    <button onclick="train()">Treinar</button>
-    <button onclick="retrain()">Re-treinar</button>
-    <pre id="trainout"></pre>
-  </div>
+  <!-- UPLOAD -->
+  <section class="bg-gray-900/70 backdrop-blur-md p-8 rounded-2xl shadow-lg w-full max-w-2xl text-center border border-gray-800 hover:border-cyan-500/50 transition">
+    <h2 class="text-2xl font-semibold mb-6">Importar Dados</h2>
 
-  <div class="card">
-    <h3>3) Predizer</h3>
-    <p>Envie um JSON com as colunas (ex.: crop, year, state, area, rain_mm, fertilizer_kg_ha, ...)</p>
-    <textarea id="json" rows="6" style="width:100%;">{"crop":"Arecanut","year":1997,"season":"Inverno","state":"Assam","area":73814,"production":56708,"rain_mm":2051.4,"fertilizer_kg_ha":7024878.38,"pesticide_kg_ha":22882.34}</textarea>
-    <button onclick="predict()">Prever</button>
-    <pre id="predout"></pre>
-  </div>
+    <input id="file" type="file" accept=".csv" class="text-gray-300 mb-4" />
+    <button id="uploadBtn" class="w-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition">
+      📤 Enviar CSV
+    </button>
+    <p id="uploadStatus" class="text-gray-400 mt-4"></p>
+  </section>
 
-<script>
-const API = "http://localhost:8000";
+  <!-- TRAIN -->
+  <section class="mt-10 bg-gray-900/70 p-6 rounded-xl border border-gray-800 w-full max-w-2xl text-center">
+    <h3 class="text-xl font-semibold mb-3 text-cyan-400">⚙️ Treinar Modelo</h3>
 
-async function upload(){
-  const f = document.getElementById("file").files[0];
-  if(!f){ alert("Selecione um CSV."); return; }
-  const fd = new FormData(); fd.append("file", f);
-  const res = await fetch(API + "/upload_csv", { method:"POST", body: fd });
-  const data = await res.json();
-  if(!res.ok){ alert(data.detail || "Erro no upload"); return; }
-  renderSummary(data.summary);
-  renderCharts(data.images);
-}
+    <div class="flex flex-col md:flex-row justify-center gap-4 mb-4">
+      <input id="target" placeholder="Coluna alvo (ex: yield_kg_ha)" class="p-2 rounded bg-gray-800 text-white w-full md:w-1/2" value="yield_kg_ha" />
+      <select id="model" class="p-2 rounded bg-gray-800 text-white w-full md:w-1/3">
+        <option value="random_forest">Random Forest</option>
+        <option value="linear">Linear Regression</option>
+      </select>
+    </div>
 
-async function train(){
-  const target = document.getElementById("target").value;
-  const model = document.getElementById("model").value;
-  const res = await fetch(API + "/train", {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({target: target, model_type: model})
-  });
-  const data = await res.json();
-  document.getElementById("trainout").textContent = JSON.stringify(data, null, 2);
-}
+    <div class="flex gap-4 justify-center">
+      <button id="trainBtn" class="px-6 py-3 bg-green-600 rounded-lg font-semibold hover:bg-green-700 transition">
+        🚀 Treinar
+      </button>
+      <button id="retrainBtn" class="px-6 py-3 bg-yellow-600 rounded-lg font-semibold hover:bg-yellow-700 transition">
+        🔁 Re-treinar
+      </button>
+    </div>
 
-async function retrain(){
-  const target = document.getElementById("target").value;
-  const model = document.getElementById("model").value;
-  const res = await fetch(API + "/retrain", {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({target: target, model_type: model})
-  });
-  const data = await res.json();
-  document.getElementById("trainout").textContent = JSON.stringify(data, null, 2);
-}
+    <pre id="trainout" class="bg-gray-800 mt-6 p-4 rounded text-left text-sm overflow-x-auto"></pre>
+  </section>
 
-async function predict(){
-  const txt = document.getElementById("json").value;
-  const res = await fetch(API + "/predict", {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({record: JSON.parse(txt)})
-  });
-  const data = await res.json();
-  document.getElementById("predout").textContent = JSON.stringify(data, null, 2);
-}
+  <!-- PREDICT -->
+  <section class="mt-10 bg-gray-900/70 p-6 rounded-xl border border-gray-800 w-full max-w-2xl text-center">
+    <h3 class="text-xl font-semibold mb-3 text-cyan-400">📈 Fazer Previsão</h3>
+    <form id="predictForm" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <input name="crop" placeholder="Cultura" class="p-2 rounded bg-gray-800 text-white" />
+      <input name="year" placeholder="Ano" class="p-2 rounded bg-gray-800 text-white" />
+      <input name="season" placeholder="Estação" class="p-2 rounded bg-gray-800 text-white" />
+      <input name="area" placeholder="Área (ha)" class="p-2 rounded bg-gray-800 text-white" />
+      <input name="production" placeholder="Produção (t)" class="p-2 rounded bg-gray-800 text-white" />
+      <input name="rain_mm" placeholder="Chuva (mm)" class="p-2 rounded bg-gray-800 text-white" />
+      <input name="fertilizer_kg_ha" placeholder="Fertilizante (kg/ha)" class="p-2 rounded bg-gray-800 text-white" />
+      <input name="pesticide_kg_ha" placeholder="Pesticida (kg/ha)" class="p-2 rounded bg-gray-800 text-white" />
+    </form>
+    <button id="predictBtn" class="mt-4 w-full bg-gradient-to-r from-purple-500 to-indigo-600 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+      ⚙️ Calcular Previsão
+    </button>
+    <p id="predictResult" class="text-cyan-400 mt-4"></p>
+  </section>
 
-function renderSummary(s){
-  const el = document.getElementById("summary");
-  el.innerHTML = "";
-  Object.entries(s).forEach(([k,v]) => {
-    if(v !== null && v !== undefined){
-      const span = document.createElement("span");
-      span.textContent = `${k}: ${v}`;
-      el.appendChild(span);
-    }
-  });
-}
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="hidden mt-20 w-full max-w-5xl bg-gray-900 p-8 rounded-2xl shadow-xl border border-gray-800">
+    <h2 class="text-2xl font-semibold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-blue-500">
+      Resultados da Análise
+    </h2>
+    <div id="summary" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8"></div>
+    <div id="charts" class="space-y-10"></div>
+  </section>
 
-function renderCharts(images){
-  const container = document.getElementById("charts");
-  container.innerHTML = "";
-  for(const [name, b64] of Object.entries(images)){
-    const card = document.createElement("div"); card.className="card";
-    const h = document.createElement("h3"); h.textContent = name.replaceAll("_"," ");
-    const img = document.createElement("img"); img.src = "data:image/png;base64,"+b64;
-    card.appendChild(h); card.appendChild(img); container.appendChild(card);
-  }
-}
-</script>
+  <footer class="mt-20 py-6 text-gray-500 text-sm border-t border-gray-800 w-full text-center">
+    © 2025 CSV Analyzer — Feito com 💙 e dados.
+  </footer>
+
+  <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
