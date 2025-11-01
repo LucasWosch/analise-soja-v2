@@ -1,4 +1,4 @@
-# services/viz.py
+# services/analytics.py
 import io, base64, re, unicodedata
 import pandas as pd
 import numpy as np
@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 
 BASIC_NUM_COLS = ["yield_kg_ha","rain_mm","fertilizer_kg_ha","pesticide_kg_ha","area","production"]
 
+
+# -------------------------------------------------------------------------------------------------/
 def _fig_to_b64() -> str:
     buf = io.BytesIO()
     plt.tight_layout()
@@ -16,6 +18,8 @@ def _fig_to_b64() -> str:
     buf.seek(0)
     return base64.b64encode(buf.read()).decode("utf-8")
 
+
+# -------------------------------------------------------------------------------------------------/
 def _norm_text(s: pd.Series) -> pd.Series:
     # lower + strip + remove accents + collapse spaces
     s = s.astype(str).str.strip().str.lower()
@@ -23,6 +27,8 @@ def _norm_text(s: pd.Series) -> pd.Series:
     s = s.str.replace(r"\s+", " ", regex=True)
     return s
 
+
+# -------------------------------------------------------------------------------------------------/
 def _crop_mask(df: pd.DataFrame, crop_name: str) -> pd.Series:
     """
     Cria máscara booleana para linhas cuja 'crop' combine com a cultura desejada.
@@ -53,6 +59,8 @@ def _crop_mask(df: pd.DataFrame, crop_name: str) -> pd.Series:
     rx = r"(" + "|".join([re.escape(p) for p in patterns]) + r")"
     return crop_norm.str.contains(rx, na=False)
 
+
+# -------------------------------------------------------------------------------------------------/
 def bar_top_crops(df: pd.DataFrame) -> str:
     if "crop" not in df.columns:
         plt.figure(); plt.text(0.1,0.5,"Sem coluna 'crop'")
@@ -64,6 +72,8 @@ def bar_top_crops(df: pd.DataFrame) -> str:
     plt.xlabel("Cultura"); plt.ylabel("Registros")
     return _fig_to_b64()
 
+
+# -------------------------------------------------------------------------------------------------/
 def yield_by_state(df: pd.DataFrame) -> str:
     if "state" not in df.columns or "yield_kg_ha" not in df.columns:
         plt.figure(); plt.text(0.1,0.5,"Falta 'state' ou 'yield_kg_ha'")
@@ -75,6 +85,8 @@ def yield_by_state(df: pd.DataFrame) -> str:
     plt.xlabel("Estado"); plt.ylabel("kg/ha")
     return _fig_to_b64()
 
+
+# -------------------------------------------------------------------------------------------------/
 def hist_numeric(df: pd.DataFrame) -> str:
     num = [c for c in BASIC_NUM_COLS if c in df.columns]
     if not num:
@@ -85,6 +97,8 @@ def hist_numeric(df: pd.DataFrame) -> str:
     plt.suptitle("Distribuições numéricas")
     return _fig_to_b64()
 
+
+# -------------------------------------------------------------------------------------------------/
 def corr_matrix(df: pd.DataFrame) -> str:
     num = df.select_dtypes(include=[np.number])
     if num.shape[1] < 2:
@@ -99,6 +113,8 @@ def corr_matrix(df: pd.DataFrame) -> str:
     plt.colorbar()
     return _fig_to_b64()
 
+# -------------------------------------------------------------------------------------------------/
+
 def box_by_season_macro(df: pd.DataFrame) -> str:
     if "season_macro" not in df.columns or "yield_kg_ha" not in df.columns:
         plt.figure(); plt.text(0.1,0.5,"Falta 'season_macro' ou 'yield_kg_ha'")
@@ -111,9 +127,11 @@ def box_by_season_macro(df: pd.DataFrame) -> str:
     plt.ylabel("kg/ha")
     return _fig_to_b64()
 
-# ============================================
+
+
+# -------------------------------------------------------------------------------------------------/
 # GENÉRICO: Produção por Ano para QUALQUER cultura
-# ============================================
+
 def production_by_year(df: pd.DataFrame, crop_name: str = "soja") -> str:
     """
     Soma 'production' por 'year' apenas para linhas cuja 'crop' combine com `crop_name`.
@@ -161,6 +179,8 @@ def production_by_year(df: pd.DataFrame, crop_name: str = "soja") -> str:
     return _fig_to_b64()
 
 
+
+# -------------------------------------------------------------------------------------------------/
 def compute_basic_summary(df: pd.DataFrame) -> dict:
     out = {
         "registros": int(len(df)),
@@ -177,6 +197,10 @@ def compute_basic_summary(df: pd.DataFrame) -> dict:
             out["yield_mediana"] = float(y.median())
     return out
 
+
+
+# -------------------------------------------------------------------------------------------------/
+
 def build_all_figures_base64(df: pd.DataFrame, crop_for_production: str = "soyabean") -> dict:
     """
     Gera o dashboard completo. Você pode escolher qual cultura aparecerá
@@ -189,3 +213,5 @@ def build_all_figures_base64(df: pd.DataFrame, crop_for_production: str = "soyab
         "box_by_season_macro": box_by_season_macro(df),
         "production_by_year": production_by_year(df, crop_name=crop_for_production),
     }
+
+# -------------------------------------------------------------------------------------------------/

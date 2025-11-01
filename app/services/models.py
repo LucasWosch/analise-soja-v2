@@ -1,4 +1,4 @@
-# services/ml.py
+# services/models.py
 from pathlib import Path
 import time
 import joblib
@@ -22,17 +22,19 @@ TARGET_PATH = MODEL_DIR / "latest_target.txt"
 
 DEFAULT_TARGET = "yield_kg_ha"
 
-# ========= Helpers =========
+# -------------------------------------------------------------------------------------------------/
 
 def _default_emit(pct: int, msg: str):
     """Emissor padrão: imprime no console. Substitua por um callback para UI/WebSocket."""
     print(f"[{pct:3d}%] {msg}")
 
+# -------------------------------------------------------------------------------------------------/
 def _split_xy(df: pd.DataFrame, target_col: str) -> Tuple[pd.DataFrame, pd.Series]:
     y = df[target_col].astype(float)
     X = df.drop(columns=[target_col])
     return X, y
 
+# -------------------------------------------------------------------------------------------------/
 def _build_preprocess(X: pd.DataFrame) -> Tuple[ColumnTransformer, List[str], List[str]]:
     # detecta numéricas/categóricas automaticamente
     num_cols = [c for c in X.columns if pd.api.types.is_numeric_dtype(X[c])]
@@ -43,7 +45,8 @@ def _build_preprocess(X: pd.DataFrame) -> Tuple[ColumnTransformer, List[str], Li
     ])
     return pre, num_cols, cat_cols
 
-def _build_model(model_type: str, progress_verbose: bool):
+# -------------------------------------------------------------------------------------------------/
+def _build_model(model_type: str, progress_verbose: bool = False):
     if model_type == "linear":
         return LinearRegression()
     # RandomForest com verbose se quiser ver as árvores progredindo
@@ -54,6 +57,8 @@ def _build_model(model_type: str, progress_verbose: bool):
         verbose=1 if progress_verbose else 0
     )
 
+
+# -------------------------------------------------------------------------------------------------/
 # ========= API =========
 
 def train_and_save_model(
@@ -116,14 +121,18 @@ def train_and_save_model(
     emit(100, f"Treino concluído em {elapsed:.1f}s (R²={metrics['r2']:.3f}, MAE={metrics['mae']:.3f})")
     return metrics
 
+# -------------------------------------------------------------------------------------------------/
 def _load_model_and_target():
     pipe = joblib.load(MODEL_PATH)
     target_col = TARGET_PATH.read_text(encoding="utf-8").strip()
     feat = joblib.load(FEATURES_PATH)
     return pipe, target_col, feat
 
+# -------------------------------------------------------------------------------------------------/
 def predict_one(record: dict) -> float:
-    pipe, target_col, feat = _load_model_and_target()
+    pipe, target_col = _load_model_and_target()
     df = pd.DataFrame([record])  # colunas ausentes/categóricas novas são tratadas pelo OneHot/handle_unknown
     yhat = pipe.predict(df)[0]
     return float(yhat)
+
+# -------------------------------------------------------------------------------------------------/

@@ -1,9 +1,10 @@
-# services/data_utils.py
+# services/db_io.py
 from pathlib import Path
 import sqlite3
 import pandas as pd
 import numpy as np
 
+# -------------------------------------------------------------------------------------------------/
 # ======== Caminhos fixos ========
 DB_PATH = Path("plantio.db")
 TABLE_NAME = "plantio_raw"
@@ -37,6 +38,8 @@ SEASON_MACRO = {
     "whole year": "Anual",
 }
 
+
+# -------------------------------------------------------------------------------------------------/
 def _sanitize_columns(cols):
     cleaned = (
         pd.Series(cols).astype(str).str.strip().str.lower()
@@ -58,6 +61,8 @@ def _sanitize_columns(cols):
         out.append(c)
     return out
 
+
+# -------------------------------------------------------------------------------------------------/
 def normalize_columns_for_crop_dataset(df: pd.DataFrame) -> pd.DataFrame:
     # 1) renomeia
     norm_map = {k.lower(): v for k, v in COLUMN_RENAME_MAP.items()}
@@ -94,6 +99,7 @@ def normalize_columns_for_crop_dataset(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+# -------------------------------------------------------------------------------------------------/
 # ======== SQLite IO ========
 
 def load_df_to_sqlite(df: pd.DataFrame, db_path, table: str, if_exists="", add_surrogate_id=True) -> int:
@@ -112,6 +118,7 @@ def load_df_to_sqlite(df: pd.DataFrame, db_path, table: str, if_exists="", add_s
         conn.close()
     return len(df)
 
+# -------------------------------------------------------------------------------------------------/
 def read_whole_table(db_path, table: str) -> pd.DataFrame:
     db_path = Path(db_path)
     if not db_path.exists():
@@ -121,3 +128,6 @@ def read_whole_table(db_path, table: str) -> pd.DataFrame:
         return pd.read_sql_query(f'SELECT * FROM {table}', conn)
     finally:
         conn.close()
+
+
+# -------------------------------------------------------------------------------------------------/
