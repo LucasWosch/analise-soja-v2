@@ -32,7 +32,7 @@ app.add_middleware(
 
 # === Front-end ===
 app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -105,8 +105,24 @@ async def retrain(req: TrainRequest):
                                    random_state=req.random_state)
     return {"model_dir": str(MODEL_DIR), "metrics": metrics}
 
+# @app.post("/predict")
+# async def predict(req: PredictRequest):
+#     # a predição funciona com qualquer schema desde que as colunas sejam compatíveis com o que o modelo foi treinado
+#     yhat = predict_one(req.record)
+#     return {"prediction": float(yhat)}
+
+class PredictRequest(BaseModel):
+    record: dict
+
 @app.post("/predict")
 async def predict(req: PredictRequest):
-    # a predição funciona com qualquer schema desde que as colunas sejam compatíveis com o que o modelo foi treinado
-    yhat = predict_one(req.record)
+    record = req.record.copy()
+
+    # Resolvendo problema de compatibilidade de colunas
+    expected_cols = ['id', 'state', 'season_macro']  # apenas para compatibilidade interna
+    for col in expected_cols:
+        if col not in record:
+            record[col] = 0 if col == 'id' else "dummy"
+
+    yhat = predict_one(record)
     return {"prediction": float(yhat)}
