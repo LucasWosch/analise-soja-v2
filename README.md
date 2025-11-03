@@ -17,7 +17,7 @@ Construída com **FastAPI + SQLite + scikit‑learn** — recebe CSV, normaliza,
 | Salvar artefatos do modelo | ✅ |
 | Predizer 1 registro via JSON | ✅ |
 | CORS liberado (frontend externo pode consumir) | ✅ |
-
+| Interface gráfica de dashboard | ✅ |
 ---
 
 ## 🧠 Tecnologias usadas
@@ -46,16 +46,21 @@ Construída com **FastAPI + SQLite + scikit‑learn** — recebe CSV, normaliza,
 ├── data/                   # CSV original (opcional)
 ├── models/                 # artefatos ML gerados na hora do treino
 └── app/
-    ├── __init__.py
-    ├── routes/             # rotas FastAPI
-    │   ├── upload.py
-    │   ├── analyze.py
-    │   ├── train.py
-    │   └── predict.py
-    └── services/           # lógica de negócio
-        ├── analytics.py
-        ├── data_utils.py
-        └── models.py       # pipeline ML
+|   ├── __init__.py
+|   ├── routes/             # rotas FastAPI
+|    │   ├── upload.py
+|    │   ├── analyze.py
+|    │   ├── train.py
+|    │   └── predict.py
+|    └── services/           # lógica de negócio
+|        ├── analytics.py
+|        ├── data_utils.py
+|        └── models.py       # pipeline ML
+├── static/
+    └──index.html # página principal
+    └── js/
+    └── dashboard.js # lógica de interação do frontend
+
 ```
 
 ---
@@ -105,7 +110,7 @@ POST /predict
 - `models/` é criado automaticamente no 1º import do módulo de ML
 - treino usa `RandomForestRegressor(300 árvores)` por padrão — com `verbose=1` para visualização didática
 - qualquer frontend pode consumir — CORS = liberado
-
+- Dashboard: A interface de visualização está disponível em static/index.html e pode ser acessada via navegador. O JavaScript (static/js/dashboard.js) lida com a interação com a API      para exibição de gráficos e dados analíticos.
 ---
 
 ## 📄 Licença
