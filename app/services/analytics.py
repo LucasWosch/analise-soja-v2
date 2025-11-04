@@ -212,6 +212,48 @@ def build_all_figures_base64(df: pd.DataFrame, crop_for_production: str = "soyab
         "corr_matrix": corr_matrix(df),
         "box_by_season_macro": box_by_season_macro(df),
         "production_by_year": production_by_year(df, crop_name=crop_for_production),
+        "rain_by_year": rain_by_year(df),
     }
 
 # -------------------------------------------------------------------------------------------------/
+
+def rain_by_year(df: pd.DataFrame) -> str:
+    """
+    Soma 'rain_mm' por 'year'.
+    Exibe todos (ou mais) anos no eixo X.
+    """
+    required = {"year", "rain_mm"}
+    if not required.issubset(df.columns):
+        plt.figure();
+        plt.text(0.1, 0.5, "Faltam colunas: 'year' ou 'rain_mm'")
+        return _fig_to_b64()
+
+    sub = df[["year", "rain_mm"]].copy()
+
+    # Conversão para numerico, tratando erros
+    sub["year"] = pd.to_numeric(sub["year"], errors="coerce")
+    sub["rain_mm"] = pd.to_numeric(sub["rain_mm"], errors="coerce")
+    sub = sub.dropna(subset=["year", "rain_mm"])
+    if sub.empty:
+        plt.figure();
+        plt.text(0.1, 0.5, "Sem dados numéricos válidos")
+        return _fig_to_b64()
+
+    # Agrupa e soma
+    s = sub.groupby("year")["rain_mm"].sum().sort_index()
+
+    plt.figure(figsize=(9, 4.5))
+    plt.plot(s.index, s.values, marker="o", linewidth=2, color="#2c7fb8")
+    plt.title("Chuva Total por Ano")
+    plt.xlabel("Ano")
+    plt.ylabel("Chuva (mm) - Soma")
+
+    years = s.index.tolist()
+    if len(years) <= 20:
+        plt.xticks(years, rotation=45)
+    else:
+        step = max(1, len(years) // 15)
+        plt.xticks(years[::step], rotation=45)
+
+    plt.grid(True, linestyle="--", alpha=0.5)
+    return _fig_to_b64()
