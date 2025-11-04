@@ -3,7 +3,40 @@ const API = window.location.origin.includes("localhost") || window.location.prot
   ? "http://localhost:8000"
   : "";
 
-// ========== UPLOAD ==========
+// ======================================================
+// helpers
+// ======================================================
+async function runTrain(endpoint, btn, waitingText) {
+  const target = document.getElementById("target").value;
+  const model  = document.getElementById("model").value;
+  const out    = document.getElementById("trainout");
+
+  // UI aguardando
+  btn.disabled = true;
+  btn.textContent = waitingText;
+
+  out.textContent = "⏳ processando... isso pode levar alguns segundos";
+
+  // garante que painel aparece
+  document.getElementById("dashboard").classList.remove("hidden");
+
+  const res = await fetch(API + endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ target, model_type: model }),
+  });
+
+  const data = await res.json();
+
+  btn.disabled = false;
+  btn.textContent = btn.dataset.label;   // texto original
+
+  out.textContent = JSON.stringify(data, null, 2);
+}
+
+// ======================================================
+// UPLOAD
+// ======================================================
 async function upload() {
   const f = document.getElementById("file").files[0];
   if (!f) return alert("Selecione um CSV.");
@@ -21,37 +54,24 @@ async function upload() {
   renderCharts(data.images);
 }
 
-// ========== TRAIN ==========
+// ======================================================
+// TRAIN wrappers
+// ======================================================
 async function train() {
-  const target = document.getElementById("target").value;
-  const model = document.getElementById("model").value;
-
-  const res = await fetch(API + "/train", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ target: target, model_type: model }),
-  });
-
-  const data = await res.json();
-  document.getElementById("trainout").textContent = JSON.stringify(data, null, 2);
+  const btn = document.getElementById("trainBtn");
+  btn.dataset.label = "Treinar";
+  await runTrain("/train", btn, "Treinando... aguarde ⏳");
 }
 
-// ========== RETRAIN ==========
 async function retrain() {
-  const target = document.getElementById("target").value;
-  const model = document.getElementById("model").value;
-
-  const res = await fetch(API + "/retrain", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ target: target, model_type: model }),
-  });
-
-  const data = await res.json();
-  document.getElementById("trainout").textContent = JSON.stringify(data, null, 2);
+  const btn = document.getElementById("retrainBtn");
+  btn.dataset.label = "Re-treinar";
+  await runTrain("/retrain", btn, "Re-treinando... aguarde ⏳");
 }
 
-// ========== PREDICT ==========
+// ======================================================
+// PREDICT
+// ======================================================
 async function predict() {
   const form = document.getElementById("predictForm");
   const record = {};
@@ -70,7 +90,9 @@ async function predict() {
   document.getElementById("predictResult").textContent = `🌾 Previsão: ${data.prediction.toFixed(2)} kg/ha`;
 }
 
-// ========== RENDER ==========
+// ======================================================
+// RENDER
+// ======================================================
 function renderSummary(summary) {
   const dash = document.getElementById("dashboard");
   dash.classList.remove("hidden");
@@ -99,8 +121,10 @@ function renderCharts(images) {
   }
 }
 
-// ========== EVENTOS ==========
+// ======================================================
+// EVENTOS
+// ======================================================
 document.getElementById("uploadBtn").onclick = upload;
-document.getElementById("trainBtn").onclick = train;
+document.getElementById("trainBtn").onclick  = train;
 document.getElementById("retrainBtn").onclick = retrain;
 document.getElementById("predictBtn").onclick = predict;

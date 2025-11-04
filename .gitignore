@@ -1,14 +1,28 @@
-# Ignorar ambiente virtual
-venv/
+# venv
 .venv/
+venv/
 
-# Ignorar modelos treinados e arquivos grandes
+# IDE / editor
+.idea/
+.vscode/
+
+# modelos / artefatos gerados
 models/
+*.joblib
+*.pkl
 
-# Outros arquivos opcionais que costumam ser ignorados
+# cache python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+
+# sqlite / banco local
 *.db
 *.sqlite
+
+# logs
 *.log
+
+# sistema
+.DS_Store
+Thumbs.db
